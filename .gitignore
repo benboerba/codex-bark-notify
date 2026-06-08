@@ -1,0 +1,4 @@
+bark-notify.env
+*.log
+.DS_Store
+
