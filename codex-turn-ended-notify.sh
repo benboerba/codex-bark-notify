@@ -5,6 +5,8 @@ CODEX_HOME_DIR="${CODEX_HOME:-$HOME/.codex}"
 CONFIG_FILE="${CODEX_BARK_CONFIG:-$CODEX_HOME_DIR/bark-notify.env}"
 ORIGINAL_NOTIFY_FILE="$CODEX_HOME_DIR/bark-notify-original.json"
 LOG_FILE="$CODEX_HOME_DIR/bark-notify.log"
+DEDUP_FILE="$CODEX_HOME_DIR/bark-notify-last.json"
+DEDUP_SECONDS="${BARK_DEDUP_SECONDS:-120}"
 
 call_original_notify() {
   [[ -f "$ORIGINAL_NOTIFY_FILE" ]] || return 0
@@ -31,6 +33,16 @@ if command[0].endswith("codex-turn-ended-notify.sh"):
 
 subprocess.Popen(command + extra_args)
 PY
+}
+
+called_as_previous_notify() {
+  local arg
+  for arg in "$@"; do
+    if [[ "$arg" == "--previous-notify" ]]; then
+      return 0
+    fi
+  done
+  return 1
 }
 
 session_name_from_args() {
@@ -124,12 +136,15 @@ if last_user_text:
 PY
 }
 
-call_original_notify "$@"
+if ! called_as_previous_notify "$@"; then
+  call_original_notify "$@"
+fi
 
 if [[ -f "$CONFIG_FILE" ]]; then
   # shellcheck disable=SC1090
   source "$CONFIG_FILE"
 fi
+DEDUP_SECONDS="${BARK_DEDUP_SECONDS:-$DEDUP_SECONDS}"
 
 if [[ -z "${BARK_ENDPOINT:-}" || "$BARK_ENDPOINT" == *"your-bark-key"* || "$BARK_ENDPOINT" == *"替换成你的"* ]]; then
   exit 0
@@ -149,6 +164,35 @@ BODY="${BARK_BODY:-会话「${SESSION_NAME}」已结束，可以回来查看结�
 GROUP="${BARK_GROUP:-Codex}"
 SOUND="${BARK_SOUND:-bell}"
 
+if python3 - "$DEDUP_FILE" "$SESSION_NAME" "$DEDUP_SECONDS" <<'PY' 2>/dev/null
+import json
+import sys
+import time
+from pathlib import Path
+
+path = Path(sys.argv[1])
+session_name = sys.argv[2]
+window = int(sys.argv[3])
+now = time.time()
+
+if path.exists():
+    try:
+        previous = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        previous = {}
+    if previous.get("session_name") == session_name and now - float(previous.get("sent_at", 0)) < window:
+        raise SystemExit(0)
+
+path.write_text(json.dumps({"session_name": session_name, "sent_at": now}, ensure_ascii=False), encoding="utf-8")
+raise SystemExit(1)
+PY
+then
+  {
+    printf '[%s] skipped duplicate Bark notification for session: %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$SESSION_NAME"
+  } >>"$LOG_FILE" 2>&1 || true
+  exit 0
+fi
+
 {
   printf '[%s] sending Bark notification for session: %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$SESSION_NAME"
   curl -fsS --max-time 8 -G "$BARK_ENDPOINT" \
@@ -158,4 +202,3 @@ SOUND="${BARK_SOUND:-bell}"
     --data-urlencode "sound=$SOUND" \
     >/dev/null
 } >>"$LOG_FILE" 2>&1 || true
-

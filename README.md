@@ -56,6 +56,12 @@ The installer:
 
 Your Bark key stays local and is not committed to this repository.
 
+Duplicate notifications for the same session are skipped for 120 seconds by default. You can change this in `~/.codex/bark-notify.env`:
+
+```bash
+BARK_DEDUP_SECONDS="120"
+```
+
 ## Uninstall
 
 ```bash
@@ -134,6 +140,12 @@ BARK_ENDPOINT="https://api.day.app/你的BarkKey"
 - 如果还没有配置文件，就创建 `~/.codex/bark-notify.env`
 
 你的 Bark key 只保存在本机，不会提交到这个仓库。
+
+默认会在 120 秒内跳过同一会话名的重复通知。你可以在 `~/.codex/bark-notify.env` 里调整：
+
+```bash
+BARK_DEDUP_SECONDS="120"
+```
 
 ## 卸载
 
