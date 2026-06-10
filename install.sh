@@ -18,6 +18,14 @@ fi
 backup="$BACKUP_DIR/config.toml.$(date '+%Y%m%d-%H%M%S').bak"
 cp "$CONFIG_FILE" "$backup"
 
+if [[ -f "$SCRIPT_PATH" ]]; then
+  cp "$SCRIPT_PATH" "$BACKUP_DIR/codex-turn-ended-notify.sh.$(date '+%Y%m%d-%H%M%S').bak"
+fi
+
+if [[ -f "$ORIGINAL_NOTIFY_FILE" ]]; then
+  cp "$ORIGINAL_NOTIFY_FILE" "$BACKUP_DIR/bark-notify-original.json.$(date '+%Y%m%d-%H%M%S').bak"
+fi
+
 python3 - "$CONFIG_FILE" "$ORIGINAL_NOTIFY_FILE" "$SCRIPT_PATH" <<'PY'
 import json
 import re
@@ -61,4 +69,3 @@ echo "Installed codex-bark-notify."
 echo "Config backup: $backup"
 echo "Edit Bark endpoint: $CODEX_HOME_DIR/bark-notify.env"
 echo "Test: $SCRIPT_PATH '{\"thread_name\":\"Bark test\"}'"
-

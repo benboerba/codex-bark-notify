@@ -46,13 +46,35 @@ Codex 完成思考：Bark test
 
 ## What It Changes
 
-The installer:
+The installer changes files under your local Codex config folder only. It does not change your projects.
 
-- backs up `~/.codex/config.toml`
-- saves the previous `notify` command to `~/.codex/bark-notify-original.json`
-- installs `~/.codex/scripts/codex-turn-ended-notify.sh`
-- writes `notify = ["~/.codex/scripts/codex-turn-ended-notify.sh"]` with the absolute path
-- creates `~/.codex/bark-notify.env` if it does not already exist
+Files it may modify or create:
+
+- `~/.codex/config.toml`: updates the Codex `notify` command
+- `~/.codex/scripts/codex-turn-ended-notify.sh`: installs or updates the Bark notification script
+- `~/.codex/bark-notify-original.json`: stores your previous `notify` command so uninstall can restore it
+- `~/.codex/bark-notify.env`: creates the Bark config file only if it does not already exist
+- `~/.codex/bark-notify.log`: appends notification logs while the script runs
+- `~/.codex/bark-notify-last.json`: stores the last sent session for duplicate-notification skipping
+- `~/.codex/bark-notify-backups/`: stores automatic backups made by the installer
+
+Before changing anything important, `install.sh` automatically backs up:
+
+- `~/.codex/config.toml`
+- existing `~/.codex/scripts/codex-turn-ended-notify.sh`, if present
+- existing `~/.codex/bark-notify-original.json`, if present
+
+Backups are saved in:
+
+```bash
+~/.codex/bark-notify-backups/
+```
+
+If you want an extra safety copy, manually back up your Codex config first:
+
+```bash
+cp ~/.codex/config.toml ~/.codex/config.toml.manual-bak
+```
 
 Your Bark key stays local and is not committed to this repository.
 
@@ -131,13 +153,35 @@ BARK_ENDPOINT="https://api.day.app/你的BarkKey"
 
 ## 它改了什么
 
-安装脚本会：
+安装脚本只会改你本机的 Codex 配置目录，不会改你的项目代码。
 
-- 备份 `~/.codex/config.toml`
-- 保存你原来的 `notify` 命令到 `~/.codex/bark-notify-original.json`
-- 安装通知脚本到 `~/.codex/scripts/codex-turn-ended-notify.sh`
-- 把 Codex 的 `notify` 指向这个通知脚本
-- 如果还没有配置文件，就创建 `~/.codex/bark-notify.env`
+它可能会修改或创建这些文件：
+
+- `~/.codex/config.toml`：修改 Codex 的 `notify` 配置
+- `~/.codex/scripts/codex-turn-ended-notify.sh`：安装或更新 Bark 通知脚本
+- `~/.codex/bark-notify-original.json`：保存你原来的 `notify` 命令，方便卸载时恢复
+- `~/.codex/bark-notify.env`：只在不存在时创建，用来填写 Bark 地址
+- `~/.codex/bark-notify.log`：脚本运行时追加通知日志
+- `~/.codex/bark-notify-last.json`：记录上次通知，用来跳过重复通知
+- `~/.codex/bark-notify-backups/`：安装脚本自动保存的备份目录
+
+在修改重要文件前，`install.sh` 会自动备份：
+
+- `~/.codex/config.toml`
+- 如果已存在，备份 `~/.codex/scripts/codex-turn-ended-notify.sh`
+- 如果已存在，备份 `~/.codex/bark-notify-original.json`
+
+备份会放在：
+
+```bash
+~/.codex/bark-notify-backups/
+```
+
+如果你想更稳一点，也可以安装前自己手动备份一份：
+
+```bash
+cp ~/.codex/config.toml ~/.codex/config.toml.manual-bak
+```
 
 你的 Bark key 只保存在本机，不会提交到这个仓库。
 
