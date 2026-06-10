@@ -45,6 +45,66 @@ called_as_previous_notify() {
   return 1
 }
 
+is_manual_test() {
+  local arg
+  for arg in "$@"; do
+    case "$arg" in
+      manual-test|test|test-run) return 0 ;;
+    esac
+  done
+  return 1
+}
+
+is_internal_text() {
+  local text="$1"
+  [[ "$text" == *"<codex_internal_context"* ]] && return 0
+  [[ "$text" == *"<environment_context>"* ]] && return 0
+  [[ "$text" == *"<turn_aborted>"* ]] && return 0
+  return 1
+}
+
+recent_task_complete() {
+  python3 - "$CODEX_HOME_DIR" <<'PY' 2>/dev/null
+import glob
+import json
+import os
+import sys
+import time
+from pathlib import Path
+
+codex_home = Path(sys.argv[1])
+now = time.time()
+session_files = sorted(
+    glob.glob(str(codex_home / "sessions" / "**" / "*.jsonl"), recursive=True),
+    key=lambda p: os.path.getmtime(p),
+    reverse=True,
+)
+
+for candidate in session_files[:8]:
+    path = Path(candidate)
+    if now - path.stat().st_mtime > 300:
+        continue
+    last_event = None
+    with path.open(encoding="utf-8") as fh:
+        for line in fh:
+            try:
+                item = json.loads(line)
+            except Exception:
+                continue
+            if item.get("type") == "event_msg":
+                last_event = item.get("payload") or {}
+    if not last_event:
+        continue
+    if last_event.get("type") == "task_complete":
+        print("yes")
+        raise SystemExit(0)
+    print("no")
+    raise SystemExit(1)
+
+raise SystemExit(1)
+PY
+}
+
 session_name_from_args() {
   local arg
   for arg in "$@"; do
@@ -65,7 +125,12 @@ for key in ("thread_name", "session_name", "conversation_name", "title", "name")
 
     case "$arg" in
       turn-ended|manual-test|test|test-run|"") ;;
-      *) printf '%s\n' "$arg"; return 0 ;;
+      *)
+        if ! is_internal_text "$arg"; then
+          printf '%s\n' "$arg"
+          return 0
+        fi
+        ;;
     esac
   done
 }
@@ -113,6 +178,8 @@ with active_path.open(encoding="utf-8") as fh:
                 text = content.get("text") or ""
                 if not text or "<environment_context>" in text or "<turn_aborted>" in text:
                     continue
+                if "<codex_internal_context" in text:
+                    continue
                 parts.append(" ".join(text.split()))
             if parts:
                 last_user_text = " ".join(parts)
@@ -145,6 +212,13 @@ if [[ -f "$CONFIG_FILE" ]]; then
   source "$CONFIG_FILE"
 fi
 DEDUP_SECONDS="${BARK_DEDUP_SECONDS:-$DEDUP_SECONDS}"
+
+if ! is_manual_test "$@" && ! recent_task_complete >/dev/null; then
+  {
+    printf '[%s] skipped Bark notification because latest Codex event is not task_complete\n' "$(date '+%Y-%m-%d %H:%M:%S')"
+  } >>"$LOG_FILE" 2>&1 || true
+  exit 0
+fi
 
 if [[ -z "${BARK_ENDPOINT:-}" || "$BARK_ENDPOINT" == *"your-bark-key"* || "$BARK_ENDPOINT" == *"替换成你的"* ]]; then
   exit 0
