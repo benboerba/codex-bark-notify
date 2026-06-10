@@ -1,99 +1,5 @@
 # codex-bark-notify
 
-Send a Bark push notification to your phone when a Codex turn finishes.
-
-It uses Codex's existing `notify` config, keeps the original desktop notification command, and adds a Bark push with the current session name when available.
-
-## Prerequisites
-
-Install the Bark app on your iPhone first:
-
-- App Store: search for `Bark`
-- Open Bark and copy your push URL, usually like `https://api.day.app/your-bark-key`
-
-## Install
-
-```bash
-git clone https://github.com/benboerba/codex-bark-notify.git
-cd codex-bark-notify
-bash install.sh
-```
-
-Then edit:
-
-```bash
-open ~/.codex/bark-notify.env
-```
-
-Set your Bark endpoint:
-
-```bash
-BARK_ENDPOINT="https://api.day.app/your-bark-key"
-```
-
-## Test
-
-```bash
-~/.codex/scripts/codex-turn-ended-notify.sh '{"thread_name":"Bark test"}'
-```
-
-You should receive a push similar to:
-
-```text
-Codex 完成思考：Bark test
-会话「Bark test」已结束，可以回来查看结果了。
-```
-
-## What It Changes
-
-The installer changes files under your local Codex config folder only. It does not change your projects.
-
-Files it may modify or create:
-
-- `~/.codex/config.toml`: updates the Codex `notify` command
-- `~/.codex/scripts/codex-turn-ended-notify.sh`: installs or updates the Bark notification script
-- `~/.codex/bark-notify-original.json`: stores your previous `notify` command so uninstall can restore it
-- `~/.codex/bark-notify.env`: creates the Bark config file only if it does not already exist
-- `~/.codex/bark-notify.log`: appends notification logs while the script runs
-- `~/.codex/bark-notify-last.json`: stores the last sent session for duplicate-notification skipping
-- `~/.codex/bark-notify-backups/`: stores automatic backups made by the installer
-
-Before changing anything important, `install.sh` automatically backs up:
-
-- `~/.codex/config.toml`
-- existing `~/.codex/scripts/codex-turn-ended-notify.sh`, if present
-- existing `~/.codex/bark-notify-original.json`, if present
-
-Backups are saved in:
-
-```bash
-~/.codex/bark-notify-backups/
-```
-
-If you want an extra safety copy, manually back up your Codex config first:
-
-```bash
-cp ~/.codex/config.toml ~/.codex/config.toml.manual-bak
-```
-
-Your Bark key stays local and is not committed to this repository.
-
-Duplicate notifications for the same session are skipped for 120 seconds by default. You can change this in `~/.codex/bark-notify.env`:
-
-```bash
-BARK_DEDUP_SECONDS="120"
-```
-
-## Uninstall
-
-```bash
-bash uninstall.sh
-```
-
-This restores the previous `notify` command when it was saved during install.
-
----
-
 # 中文说明
 
 这个小工具可以在 **Codex 当前回合完成思考 / 执行结束** 时，通过 Bark 给手机发一条通知。
@@ -198,3 +104,99 @@ bash uninstall.sh
 ```
 
 卸载时会尽量恢复安装前的 Codex `notify` 配置。
+
+---
+
+# English
+
+Send a Bark push notification to your phone when a Codex turn finishes.
+
+It uses Codex's existing `notify` config, keeps the original desktop notification command, and adds a Bark push with the current session name when available.
+
+## Prerequisites
+
+Install the Bark app on your iPhone first:
+
+- App Store: search for `Bark`
+- Open Bark and copy your push URL, usually like `https://api.day.app/your-bark-key`
+
+## Install
+
+```bash
+git clone https://github.com/benboerba/codex-bark-notify.git
+cd codex-bark-notify
+bash install.sh
+```
+
+Then edit:
+
+```bash
+open ~/.codex/bark-notify.env
+```
+
+Set your Bark endpoint:
+
+```bash
+BARK_ENDPOINT="https://api.day.app/your-bark-key"
+```
+
+## Test
+
+```bash
+~/.codex/scripts/codex-turn-ended-notify.sh '{"thread_name":"Bark test"}'
+```
+
+You should receive a push similar to:
+
+```text
+Codex 完成思考：Bark test
+会话「Bark test」已结束，可以回来查看结果了。
+```
+
+## What It Changes
+
+The installer changes files under your local Codex config folder only. It does not change your projects.
+
+Files it may modify or create:
+
+- `~/.codex/config.toml`: updates the Codex `notify` command
+- `~/.codex/scripts/codex-turn-ended-notify.sh`: installs or updates the Bark notification script
+- `~/.codex/bark-notify-original.json`: stores your previous `notify` command so uninstall can restore it
+- `~/.codex/bark-notify.env`: creates the Bark config file only if it does not already exist
+- `~/.codex/bark-notify.log`: appends notification logs while the script runs
+- `~/.codex/bark-notify-last.json`: stores the last sent session for duplicate-notification skipping
+- `~/.codex/bark-notify-backups/`: stores automatic backups made by the installer
+
+Before changing anything important, `install.sh` automatically backs up:
+
+- `~/.codex/config.toml`
+- existing `~/.codex/scripts/codex-turn-ended-notify.sh`, if present
+- existing `~/.codex/bark-notify-original.json`, if present
+
+Backups are saved in:
+
+```bash
+~/.codex/bark-notify-backups/
+```
+
+If you want an extra safety copy, manually back up your Codex config first:
+
+```bash
+cp ~/.codex/config.toml ~/.codex/config.toml.manual-bak
+```
+
+Your Bark key stays local and is not committed to this repository.
+
+Duplicate notifications for the same session are skipped for 120 seconds by default. You can change this in `~/.codex/bark-notify.env`:
+
+```bash
+BARK_DEDUP_SECONDS="120"
+```
+
+## Uninstall
+
+```bash
+bash uninstall.sh
+```
+
+This restores the previous `notify` command when it was saved during install.
